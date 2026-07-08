@@ -1,0 +1,30 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/opt/ros/foxy/include/**",
+        "/media/l/E/2025/KFNAV/src/kfnav_gi/include/**",
+        "/media/l/E/2025/KFNAV/src/mbs_tb/include/**",
+        "/media/l/E/2025/KFNAV/src/module_it/include/**",
+        "/media/l/E/2025/KFNAV/src/module_tb/include/**",
+        "/media/l/E/2025/KFNAV/src/module_zh/include/**",
+        "/media/l/E/2025/KFNAV/src/module_zt/include/**",
+        "/media/l/E/2025/KFNAV/src/nav_record/include/**",
+        "/media/l/E/2025/KFNAV/src/sensor_camera/include/**",
+        "/media/l/E/2025/KFNAV/src/sensor_gnss/include/**",
+        "/media/l/E/2025/KFNAV/src/sensor_uwb/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

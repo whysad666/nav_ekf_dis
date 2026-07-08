@@ -1,0 +1,87 @@
+imu_freq    : 200
+nav_pub_rate: 10
+precisionEchoEpoch: 10 # 每间隔多少个GNSS观测频率打印一次状态信息
+ca_timelength  : 20  # 初始对准时间
+gnss_timelength: 10000 # 除去初始对准时间，正式开始解算时的GNSS观测时长
+calc_timelength: 100000
+
+is_gnss_using: true
+
+is_baro_using: false
+is_baro_using_kf: true
+is_range_using: false
+is_mag_yaw_using: true
+range_id_1_3: [1,2,3]
+range_id_4_6: [4,5,6]
+range_id_7_9: [7,8,9]
+range_id_10_12: [10,11,12]
+anchor_id_1_3: [43,45,103]
+# 1112,1122: 1580-1800
+# 1217: 2650-2870
+
+zupt_timelength: 80 # 零速观测时长，0表示禁用零速观测
+omega_threshold: 1 # [deg/s]
+velstd: [0.2,0.2,0.2] #[m/s]
+baro_std: 5 #[m]
+range_std: [65,200,-1] # 分别表示测距传感器误差（用于设置滤波权重）、测距传感器最大误差阈值（超过则不使用该时刻的测距信息）,最后一位-1无意义
+gnss_pos_std: [0.5,0.5,1] #[m]
+
+topic:
+  imu: "/zh_origin"
+  mag: "/mag_origin"
+  gnss_origin: "/gnss_origin"
+  gnss_pv: "unuse"
+  baro: "baro"
+  range: "/range"
+  gi_nav: "gi_nav"
+
+# calib:
+#   k_g:
+#     r1: [0.999984161093322, 0, 0]
+#     r2: [-2.87083777346630e-06, 0.999984458493234, 0]
+#     r3: [-3.14641223317699e-06, -8.98560373354665e-06, 0.999978087155777]
+#   # b_g: [3.90480648194952e-10,-3.00692986226175e-08,8.48950841207699e-08]
+#   k_a:
+#     r1: [1.00167669702691, 2.21277384153318e-05, 2.87505985108000e-05]
+#     r2: [1.56589704034716e-05, 1.00168766649222, -8.71106867796550e-06]
+#     r3: [-6.26687333599398e-05, -1.65512184547082e-05, 1.00164854913955]
+#   b_a: [0.00176947610052812, -0.000285701405821846, 0.000863179197317872]
+
+calib: # 2023-05-26,全为单位矩阵
+  k_g:
+    r1: [1, 0, 0]
+    r2: [0, 1, 0]
+    r3: [0, 0, 1]
+  b_g: [-7.3194034127e-05, 2.91314928242e-05, 2.67327836791e-05]
+  k_a:
+    r1: [1, 0, 0]
+    r2: [0, 1, 0]
+    r3: [0, 0, 1]
+  b_a: [0, 0, 0]
+initstate:
+  euler: [-1,-1,-1] # [deg] unused
+  velocity: [-1,-1,-1] # [m/s] unused
+  position: [-1,-1,-1] # [deg, deg, m] unused
+  imu_error:
+    gyro_bias: [0,0,0] # [deg/hr]
+    accl_bias: [0,0,0] # [μg]
+    gyro_scale: [0,0,0] # [ppm]
+    accl_scale: [0,0,0] # [ppm]
+initstd:
+  euler: [3,3,20]
+  velocity: [2,2,2]
+  position: [5,5,5]
+  imu_error:
+    gyro_bias: [100,100,100] # [deg/hr]
+    accl_bias: [5000,5000,5000] # [μg]
+    gyro_scale: [150,150,150] # [ppm]
+    accl_scale: [200,200,200] # [ppm]
+prop_noise:
+  # Converted from /home/whysad/imu_kalibr/results/20220908/2022-09-08-09-59-18_imu_param.yaml
+  gyr_arw: [4.259289615536407, 4.785013206703909, 3.152430972378213] # [deg/sqrt(hr)]
+  acc_vrw: [627.7541205223072, 595.3616870257509, 725.499055519942] # [μg/sqrt(Hz)]
+  bias_gyr_rw: [50,50,50] # [deg/hr/sqrt(hr)]
+  bias_acc_rw: [200,200,200] # [μg/sqrt(hr)]
+  scale_gyr_rw: [150,150,150] # [ppm/sqrt(hr)]
+  scale_acc_rw: [150,150,150] # [ppm/sqrt(hr)]
+  corr_time: 36000 # [S]

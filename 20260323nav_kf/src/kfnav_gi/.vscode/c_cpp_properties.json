@@ -1,0 +1,43 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "/usr/include/eigen3",
+                "/usr/include/opencv4",
+                "/opt/ros/humble/include/geometry_msgs",
+                "/opt/ros/humble/include/std_msgs",
+                "/opt/ros/humble/include/sensor_msgs",
+                "/opt/ros/humble/include/rclcpp",
+                "/opt/ros/humble/include/rosidl_runtime_cpp",
+                "/opt/ros/humble/include/rosidl_runtime_c",
+                "/opt/ros/humble/include/builtin_interfaces",
+                "/opt/ros/humble/include/rcutils",
+                "/opt/ros/humble/include/message_filters",
+                "/opt/ros/humble/include/nav_msgs",
+                "/opt/ros/humble/include/tf2",
+                "/opt/ros/humble/include/rcl",
+                "/opt/ros/humble/include/rmw",
+                "/opt/ros/humble/include/rcl",
+                "/opt/ros/humble/include/tf2_geometry_msgs",
+                "/opt/ros/humble/include/tf2_ros",
+                "/opt/ros/humble/include/tf2_msgs",
+                "/opt/ros/humble/include/rcl_yaml_param_parser",
+                "/opt/ros/humble/include/rcl_interfaces",
+                "/opt/ros/humble/include/rcpputils",
+                "/opt/ros/humble/include/rosidl_typesupport_interface",
+                "/opt/ros/humble/include/tracetools",
+                "/opt/ros/humble/include/libstatistics_collector",
+                "/opt/ros/humble/include/statistics_msgs",
+                "${workspaceFolder}/include/kfnav_gi",
+                "${workspaceFolder}/include",
+                "${default}"
+            ],
+            "defines": [],
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

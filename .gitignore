@@ -1,0 +1,26 @@
+.agents/
+.codex/
+.git/
+.git_actual/
+
+__pycache__/
+*.py[cod]
+
+# ROS/catkin generated files
+20260323nav_kf/build/
+20260323nav_kf/devel/
+20260323nav_kf/.catkin_tools/
+20260323nav_kf/nav_outputs/
+
+# Experiment data and generated outputs
+*.bag
+*.bag.active
+nav_outputs/
+prepared_bags/
+plot_outputs/
+tools/
+
+# Generated documents/logs
+*.log
+*.pdf
+*.tex

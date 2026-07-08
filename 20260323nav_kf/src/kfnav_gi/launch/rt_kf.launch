@@ -1,0 +1,13 @@
+<launch>
+    <arg name="node_name" default="FIX2" />
+    
+    <arg name="dump_root" default="/home/lxc/CODE/KF_NAV_WS/KFNAV_UAV_for_L_JGdataV2/dataset/" />
+    
+    <node pkg="kfnav_gi" type="kfnav_gi_node" name="$(arg node_name)" output="screen">
+        <rosparam command="load" file="$(find kfnav_gi)/config/gi_config.yaml" />
+        <param name="config_path" value="$(find kfnav_gi)/config/rlg_gnss.yaml" />
+        <param name="param_file" value="$(find kfnav_gi)/config/gi_config.yaml" />
+        <param name="dump_root" value="$(arg dump_root)" />
+        <param name="redirect_from_file" value="0" />
+    </node>
+</launch>

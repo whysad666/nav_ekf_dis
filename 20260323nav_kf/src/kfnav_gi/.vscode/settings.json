@@ -1,0 +1,22 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/../../build",
+        "--completion-style=detailed",
+        "--clang-tidy",
+        "--clang-tidy-checks=-*,modernize*",
+        "--header-insertion=never"
+    ],
+    "files.associations": {
+        "*.m": "matlab",
+        "functional": "cpp"
+    },
+    // "C_Cpp.intelliSenseEngine": "disabled"
+}
