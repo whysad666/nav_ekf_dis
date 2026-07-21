@@ -70,7 +70,7 @@ void PIEngine::insPropagation(const IMU &imu1_in, const IMU &imu2_in) {
 
     // IMU状态更新(机械编排算法)
     // update imustate(mechanization)
-    INSCalc::calc(pvacur_, imu1, imu2, 0.005, INSCalc::INSMode::Normal);
+    INSCalc::calc(pvacur_, imu1, imu2, 0.5 * (imu1.dt + imu2.dt), INSCalc::INSMode::Normal);
 }
 
 NavState PIEngine::getNavState() {

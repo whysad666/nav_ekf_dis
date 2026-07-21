@@ -3,22 +3,16 @@
 namespace ImuCommon {
 IMU imuCalibration(const IMU &imu, const ImuCalib &imucalib_) {
     // 补偿标定参数
-    IMU ret;
-    ret.time = imu.time;
-    ret.dt = imu.dt;
-    ret.raw_sn = imu.raw_sn;
+    IMU ret = imu;
 
     ret.dvel = imucalib_.Kaccl * imu.dvel - imucalib_.bias_accl * imu.dt;
-    ret.dtheta = imucalib_.Kgyro * (imu.dtheta - imucalib_.bias_gyro);
+    ret.dtheta = imucalib_.Kgyro * (imu.dtheta - imucalib_.bias_gyro * imu.dt);
     return ret;
 }
 
 IMU imuCompensate(const IMU &imu, const ImuError &imuerror_) {
     // 补偿滤波结果
-    IMU ret;
-    ret.time = imu.time;
-    ret.dt = imu.dt;
-    ret.raw_sn = imu.raw_sn;
+    IMU ret = imu;
 
     // 补偿IMU零偏
     // compensate the imu bias
@@ -36,9 +30,12 @@ IMU imuCompensate(const IMU &imu, const ImuError &imuerror_) {
 }
 
 IMU imuSummation(const IMU &imu1, const IMU &imu2) {
-    IMU ret;
+    IMU ret = imu2;
     ret.time = std::max(imu1.time, imu2.time);
     ret.dt = imu1.dt + imu2.dt;
+    ret.frame_delta = imu1.frame_delta + imu2.frame_delta;
+    ret.lost_frames = imu1.lost_frames + imu2.lost_frames;
+    ret.has_gap = imu1.has_gap || imu2.has_gap;
     ret.dtheta = imu1.dtheta + imu2.dtheta;
     ret.dvel = imu1.dvel + imu2.dvel;
     return ret;

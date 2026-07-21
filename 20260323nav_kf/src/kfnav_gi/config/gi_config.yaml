@@ -1,16 +1,19 @@
 imu_freq    : 200
 nav_pub_rate: 10
 precisionEchoEpoch: 10 # 每间隔多少个GNSS观测频率打印一次状态信息
-ca_timelength  : 20  # 初始对准时间
-gnss_timelength: 10000 # 除去初始对准时间，正式开始解算时的GNSS观测时长
+ca_timelength  : 30 # 初始对准时间
+gnss_timelength: 100 # 除去初始对准时间，正式开始解算时的GNSS观测时长
 calc_timelength: 100000
 
-is_gnss_using: true
+is_gnss_using: false
 
 is_baro_using: false
 is_baro_using_kf: true
 is_range_using: false
-is_mag_yaw_using: true
+is_mag_yaw_using: false
+# Test-only reference yaw override. Applied after coarse and magnetic alignment.
+is_initial_yaw_override: true
+initial_yaw_deg: -135.4 # [deg], FRD/NED yaw, north=0, east=+90
 range_id_1_3: [1,2,3]
 range_id_4_6: [4,5,6]
 range_id_7_9: [7,8,9]
@@ -23,7 +26,7 @@ zupt_timelength: 80 # 零速观测时长，0表示禁用零速观测
 omega_threshold: 1 # [deg/s]
 velstd: [0.2,0.2,0.2] #[m/s]
 baro_std: 5 #[m]
-range_std: [65,200,-1] # 分别表示测距传感器误差（用于设置滤波权重）、测距传感器最大误差阈值（超过则不使用该时刻的测距信息）,最后一位-1无意义
+range_std: [5,50,-1] # 分别表示测距传感器误差（用于设置滤波权重）、测距传感器最大误差阈值（超过则不使用该时刻的测距信息）,最后一位-1无意义
 gnss_pos_std: [0.5,0.5,1] #[m]
 
 topic:
@@ -47,12 +50,12 @@ topic:
 #     r3: [-6.26687333599398e-05, -1.65512184547082e-05, 1.00164854913955]
 #   b_a: [0.00176947610052812, -0.000285701405821846, 0.000863179197317872]
 
-calib: # 2023-05-26,全为单位矩阵
+calib: # 156-3: gyro bias estimated from the first static 15 s, preserving Earth rotation
   k_g:
     r1: [1, 0, 0]
     r2: [0, 1, 0]
     r3: [0, 0, 1]
-  b_g: [-7.3194034127e-05, 2.91314928242e-05, 2.67327836791e-05]
+  b_g: [0, 0,0] # [rad/s]
   k_a:
     r1: [1, 0, 0]
     r2: [0, 1, 0]
@@ -84,4 +87,4 @@ prop_noise:
   bias_acc_rw: [200,200,200] # [μg/sqrt(hr)]
   scale_gyr_rw: [150,150,150] # [ppm/sqrt(hr)]
   scale_acc_rw: [150,150,150] # [ppm/sqrt(hr)]
-  corr_time: 36000 # [S]
+  corr_time: 3600 # [S]

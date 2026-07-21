@@ -80,6 +80,12 @@ bool ParamLoader::load(const std::string &filename) {
     is_mag_yaw_using = config["is_mag_yaw_using"].as<bool>(false);
     std::cout << " -- is_mag_yaw_using              :" << is_mag_yaw_using << std::endl;
 
+    // Optional fixed initial yaw. This is applied after coarse/magnetic alignment.
+    is_initial_yaw_override = config["is_initial_yaw_override"].as<bool>(false);
+    initial_yaw_deg = config["initial_yaw_deg"].as<double>(0.0);
+    std::cout << " -- is_initial_yaw_override       :" << is_initial_yaw_override << std::endl;
+    std::cout << " -- initial_yaw_deg               :" << initial_yaw_deg << std::endl;
+
 
     // 输入输出话题
     // topics

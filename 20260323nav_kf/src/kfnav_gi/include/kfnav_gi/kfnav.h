@@ -90,6 +90,10 @@ private:
     socket_send context;
 
     double m_time_last;
+    uint64_t last_imu_time = 0;
+    int last_imu_frame_index = -1;
+    bool has_last_imu = false;
+    bool has_last_imu_frame_index = false;
     int is_redirect_from_file;
     bool is_gnss_using;
     FileSaver fs; // 用于保存导航轨迹的文件

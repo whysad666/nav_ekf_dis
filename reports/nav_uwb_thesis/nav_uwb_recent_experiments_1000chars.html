@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>协同测距与组合导航近期实验分析报告（精简版）</title>
+  <style>
+    @page { size: A4; margin: 2.2cm 2.3cm; }
+    body { font-family: "Noto Serif CJK SC", "SimSun", serif; font-size: 11pt; line-height: 1.55; color: #111; }
+    h1 { font-size: 18pt; text-align: center; margin: 0 0 12pt; }
+    h2 { font-size: 14pt; margin: 12pt 0 5pt; }
+    p { margin: 0 0 7pt; text-indent: 2em; text-align: justify; }
+    .equation { text-indent: 0; text-align: center; font-family: "Liberation Serif", serif; font-size: 11.5pt; margin: 8pt 0; }
+    table { border-collapse: collapse; width: 100%; margin: 8pt 0 10pt; font-size: 9.5pt; }
+    th, td { border: 1px solid #555; padding: 5px 6px; text-align: center; }
+    th { background: #e9ecef; }
+    .note { font-size: 9pt; text-indent: 0; color: #333; }
+  </style>
+</head>
+<body>
+  <h1>协同测距与组合导航近期实验分析报告（精简版）</h1>
+
+  <h2>摘要</h2>
+  <p>本文对近期L3高精度IMU、L3 MEMS、156-3贴片IMU、GNSS及UWB实验进行归纳，重点评价组合导航相对精度、纯惯性漂移和UWB异常观测。结果表明：在共用GNSS位置更新条件下，L3 MEMS解算与高精度IMU解算较为一致；关闭外部观测后，两类IMU的位置误差均随时间快速累积；156-3 UWB主体误差较小，但存在长时间缺测、旧值重复和百米级粗差，直接加入EKF会导致发散。</p>
+
+  <h2>1 方法</h2>
+  <p>导航程序采用15状态误差状态EKF，状态由位置、速度、姿态误差以及陀螺和加速度计零偏构成：</p>
+  <p class="equation">δx = [δp<sup>T</sup>, δv<sup>T</sup>, δφ<sup>T</sup>, δb<sub>g</sub><sup>T</sup>, δb<sub>a</sub><sup>T</sup>]<sup>T</sup>。</p>
+  <p>本批次GNSS无可靠速度，因此只进行位置更新。UWB测距模型为 z<sub>i</sub> = ||p-p<sub>i</sub>|| + b<sub>r,i</sub> + v<sub>i</sub>，残差为 r<sub>i</sub> = z<sub>i</sub> - ||p&#770;-p<sub>i</sub>||。其中b<sub>r,i</sub>为节点相关等效测距偏置。结果按公共时间轴对齐，以同程序使用L3高精度IMU的解算作为相对参考；该参考与MEMS组共用GNSS，不能替代独立RTK真值。</p>
+
+  <h2>2 主要结果</h2>
+  <table>
+    <tr><th>实验组</th><th>Roll/Pitch/Yaw RMS</th><th>水平位置结果</th></tr>
+    <tr><td>L3 MEMS+GNSS</td><td>0.175° / 0.443° / 0.545°</td><td>相对差RMS 0.129 m</td></tr>
+    <tr><td>L3 MEMS纯惯性</td><td>0.107° / 0.464° / 1.152°</td><td>末端误差2590.4 m</td></tr>
+    <tr><td>L3高精度IMU纯惯性</td><td>0.065° / 0.052° / 0.397°</td><td>末端误差1352.9 m</td></tr>
+    <tr><td>156-3贴片IMU+GNSS</td><td>1.190° / 1.937° / 32.810°</td><td>相对差RMS 3.560 m</td></tr>
+  </table>
+  <p>L3 MEMS在GNSS约束下能够稳定工作；纯惯性条件下，高精度IMU将末端水平误差降低约47.8%，但约16分钟后仍达到千米量级，说明微小姿态误差、加速度计零偏和积分误差会持续进入速度与位置。贴片IMU在陀螺尺度乘0.5后航向误差仍大，问题不能仅靠尺度修正解决，还需统一轴向、初始航向、零偏模型和时间基准。</p>
+
+  <h2>3 UWB分析</h2>
+  <p>156-3中ID2至ID0、ID1、ID3的P95绝对误差分别为4.117 m、2.546 m和3.223 m，但最大绝对误差达到44.770 m、42.685 m和140.453 m，呈明显重尾分布。ID3链路的20.753 m仅记录8次，却跨越237.3 s，最大相邻间隔106.4 s。原始串口距离字段已经重复，转换脚本未制造该异常；折线图连接稀疏同值点后，又造成“长时间恒值”的视觉效果。</p>
+  <p>启用range更新的失败实验出现严重位置发散。仅设置固定米制阈值可以剔除部分大粗差，但无法处理旧值、节点偏置、锚点坐标错误以及状态漂移后的有效观测误拒。建议先检查观测新鲜度和节点映射，再估计b<sub>r,i</sub>，并采用归一化新息平方进行自适应门限判断：</p>
+  <p class="equation">NIS<sub>i</sub> = r<sub>i</sub><sup>T</sup>S<sub>i</sub><sup>-1</sup>r<sub>i</sub>。</p>
+  <p>滤波运行时还应记录各节点的接收率、拒绝率和残差。</p>
+
+  <h2>4 结论</h2>
+  <p>现阶段最可靠结果是L3 MEMS+GNSS相对高精度解算的一致性验证。纯惯性实验说明提高IMU等级只能减缓而不能消除长期漂移。UWB数据可用于协同定位，但必须先完成旧值检测、粗差抑制、节点偏置建模、锚点坐标核验和批量更新验证。最终论文中的绝对定位精度应使用独立RTK或其他外部真值重新评估。</p>
+  <p class="note">说明：本报告为约1000字的阶段性摘要，详细实验条件、图件及文件索引见17页长版报告。</p>
+</body>
+</html>

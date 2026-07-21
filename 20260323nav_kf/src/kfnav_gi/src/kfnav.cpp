@@ -210,11 +210,55 @@ void KfNav::callback_inertial(std::vector<double> data)
     IMU message;
     message.time = data[0] * 1e9;
     //rintf("imu message time %.5f \n",data[0]*1e9);
-    message.dt = 1.0 / pload->imudatarate;
+    const double nominal_dt = 1.0 / pload->imudatarate;
+    message.dt = nominal_dt;
     message.raw_sn = std::round(data[1] * 200);
 
     message.dtheta << data[2], data[3], data[4];
     message.dvel << data[5], data[6], data[7];
+    if (data.size() > 8)
+    {
+        message.frame_index = static_cast<int>(std::round(data[8])) & 0xff;
+        message.has_frame_index = true;
+    }
+
+    if (has_last_imu)
+    {
+        const double stamp_dt = message.time > last_imu_time ? static_cast<double>(message.time - last_imu_time) / 1e9 : -1.0;
+        if (message.has_frame_index && has_last_imu_frame_index)
+        {
+            const int frame_delta = (message.frame_index - last_imu_frame_index + 256) % 256;
+            if (frame_delta > 0)
+            {
+                message.frame_delta = frame_delta;
+                message.lost_frames = frame_delta - 1;
+                message.has_gap = message.lost_frames > 0;
+                message.dt = frame_delta * nominal_dt;
+            }
+            else
+            {
+                message.frame_delta = 0;
+                message.lost_frames = 0;
+                message.has_gap = true;
+                message.dt = stamp_dt > 0 ? stamp_dt : nominal_dt;
+            }
+        }
+        else if (stamp_dt > 0)
+        {
+            message.dt = stamp_dt;
+            message.frame_delta = std::max(1, static_cast<int>(std::round(stamp_dt / nominal_dt)));
+            message.lost_frames = std::max(0, message.frame_delta - 1);
+            message.has_gap = message.lost_frames > 0;
+        }
+    }
+
+    last_imu_time = message.time;
+    has_last_imu = true;
+    if (message.has_frame_index)
+    {
+        last_imu_frame_index = message.frame_index;
+        has_last_imu_frame_index = true;
+    }
     //printf("push before %lf vel:%lf\n",data[2],data[5]);
     main_imu_buf.push(message);
     if (main_imu_buf.getPushCnt() == static_cast<uint64_t>(pload->imudatarate))
@@ -623,6 +667,15 @@ void KfNav::gnss_ins_thread()
         ROS_WARN("Magnetometer yaw requested, but no valid MAG samples were available in the CA window. "
                  "Using coarse alignment yaw.");
     }
+    if (pload->is_initial_yaw_override)
+    {
+        const double aligned_yaw = cai0_atti.euler[2];
+        cai0_atti.euler[2] = std::remainder(pload->initial_yaw_deg * D2R, 2.0 * M_PI);
+        cai0_atti.cbn = Rotation::euler2matrix(cai0_atti.euler);
+        cai0_atti.qbn = Rotation::euler2quaternion(cai0_atti.euler);
+        ROS_WARN_STREAM("Initial yaw override enabled. aligned yaw[deg]: " << aligned_yaw * R2D
+                        << ", configured yaw[deg]: " << cai0_atti.euler[2] * R2D);
+    }
     dispVector("CA Euler: ", cai0_atti.euler * R2D);
     std::cout << "CA Duration: [ " << align_start_time << ", " << ca_end_time << "]" << std::endl;
 
@@ -690,7 +743,7 @@ void KfNav::gnss_ins_thread()
             imuvec.push_back(imu2);
         }
 
-        gi_kf.insPropagation(imu1, imu2, 1.0 / pload->imudatarate);
+        gi_kf.insPropagation(imu1, imu2, 0.5 * (imu1.dt + imu2.dt));
         predict_cnt++;
         imu_step++;
 

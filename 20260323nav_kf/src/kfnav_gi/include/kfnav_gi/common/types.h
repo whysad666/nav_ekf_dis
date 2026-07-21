@@ -105,6 +105,11 @@ using IMU = struct IMU {
     uint64_t time; // ns
     double dt;     // s
     uint64_t raw_sn; // 原始时间戳*200，相当于惯导序列号
+    int frame_index = -1; // 原始IMU帧号，0-255循环；-1表示输入中未提供
+    bool has_frame_index = false;
+    int frame_delta = 1;  // 当前帧相对上一帧跨过的采样周期数
+    int lost_frames = 0;  // frame_delta - 1
+    bool has_gap = false;
 
     Vector3d dtheta;
     Vector3d dvel;

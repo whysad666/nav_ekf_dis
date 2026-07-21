@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>协同测距与组合导航近期实验分析报告</title>
+<style>
+  @page { size: A4; margin: 2.8cm 2.6cm 2.6cm 3cm; }
+  body { font-family: "Noto Serif CJK SC", "SimSun", serif; font-size: 12pt; line-height: 1.75; color: #111; }
+  h1 { font-size: 20pt; text-align: center; margin: 1.2em 0 0.8em; page-break-before: always; }
+  h2 { font-size: 16pt; margin: 1.1em 0 0.5em; }
+  h3 { font-size: 14pt; margin: 1em 0 0.4em; }
+  p { text-indent: 2em; margin: 0.3em 0; text-align: justify; }
+  .title-page { text-align: center; page-break-after: always; padding-top: 4cm; min-height: 22cm; }
+  .title-page h1 { page-break-before: auto; font-size: 26pt; margin: 0 0 1.2em; }
+  .title-page .subtitle { font-size: 18pt; margin-bottom: 4em; }
+  .title-table { margin: 0 auto; border-collapse: collapse; font-size: 14pt; }
+  .title-table td { border: none; padding: 0.45em 0.8em; text-align: left; }
+  .abstract { page-break-after: always; }
+  .abstract h1 { page-break-before: auto; }
+  .keywords { text-indent: 0; margin-top: 1em; }
+  .toc { page-break-after: always; }
+  .toc h1 { page-break-before: auto; }
+  .toc p { text-indent: 0; margin-left: 2em; }
+  .equation { font-family: "Cambria Math", "Times New Roman", serif; font-size: 12.5pt; text-align: center; text-indent: 0; margin: 0.8em 0; }
+  .eqno { float: right; }
+  table { width: 100%; border-collapse: collapse; margin: 0.8em 0 1.1em; font-size: 10.5pt; page-break-inside: avoid; }
+  th, td { border: 1px solid #444; padding: 0.35em 0.45em; text-align: center; vertical-align: middle; }
+  th { font-weight: bold; background: #f2f2f2; }
+  .caption { text-align: center; text-indent: 0; font-size: 10.5pt; margin: 0.3em 0 1em; }
+  figure { margin: 1.2em auto; text-align: center; page-break-inside: avoid; }
+  figure img { max-width: 96%; max-height: 22cm; }
+  .wide-figure img { max-width: 100%; max-height: 23cm; }
+  .note { font-size: 10.5pt; text-indent: 0; }
+  .source { font-family: "DejaVu Sans Mono", monospace; font-size: 9.5pt; word-break: break-all; }
+  li { margin: 0.35em 0; }
+</style>
+</head>
+<body>
+
+<div class="title-page">
+  <h1>协同测距与组合导航近期实验分析报告</h1>
+  <div class="subtitle">基于多源IMU、GNSS与UWB观测的对比验证</div>
+  <table class="title-table">
+    <tr><td>报告类型：</td><td>毕业论文式阶段实验报告</td></tr>
+    <tr><td>数据批次：</td><td>铜官窑实验、L3惯导与156节点实验</td></tr>
+    <tr><td>算法平台：</td><td>15状态误差状态EKF组合导航程序</td></tr>
+    <tr><td>形成日期：</td><td>2026年7月20日</td></tr>
+  </table>
+  <div style="margin-top:10em;font-size:14pt;">实验数据处理与滤波</div>
+</div>
+
+<div class="abstract">
+  <h1>摘要</h1>
+  <p>本文整理了近期多源惯性导航、GNSS组合导航和UWB协同测距实验，筛选出具有明确输入、时间范围和对照关系的结果，并将不可复现实验与发散结果仅作为误差机理分析材料。以L3高精度惯性数据重新解算结果作为同时间段相对参考，在共用GNSS位置观测条件下，L3 MEMS组合导航飞行段Roll、Pitch、Yaw误差RMS分别为0.175°、0.443°和0.545°，水平位置差RMS为0.129 m。在关闭GNSS和UWB后，MEMS纯惯性末端水平误差达到2590.4 m，高精度IMU纯惯性对照为1352.9 m，表明高精度IMU能够显著减缓漂移，但约16分钟无外援推算仍会发散。</p>
+  <p>UWB独立精度统计显示，156-2和156-3多数测距误差集中在5 m以内，但误差分布具有明显重尾特征。156-3的ID3链路P95绝对误差仅为3.223 m，最大绝对误差却达到140.453 m。启用range更新的导航实验发生严重发散，说明固定阈值只能过滤部分粗差，不能替代节点映射检查、锚点位置校验、等效测距偏置建模、归一化新息检验和更新状态监控。</p>
+  <p class="keywords"><b>关键词：</b>捷联惯性导航；扩展卡尔曼滤波；GNSS/INS组合导航；UWB协同测距；误差状态；鲁棒观测更新</p>
+</div>
+
+<div class="toc">
+  <h1>目录</h1>
+  <p>1　研究目的与实验筛选原则</p>
+  <p>2　数据来源与预处理</p>
+  <p>3　组合导航与测距更新模型</p>
+  <p>4　评价指标与对齐方法</p>
+  <p>5　实验结果与分析</p>
+  <p>6　讨论</p>
+  <p>7　结论与后续工作</p>
+  <p>附录　核心文件索引与适用边界</p>
+</div>
+
+<h1>1　研究目的与实验筛选原则</h1>
+<p>近期实验覆盖IMU轴向与单位检查、初始对准、陀螺尺度修正、GNSS/INS组合导航、纯惯性推算、UWB测距精度分析和协同测距滤波。由于早期运行未自动保存每次配置文件、播放命令和代码版本，本文不将所有历史输出等价使用，而按照输入明确、条件可确认、时间区间可对齐和结论边界可说明的原则筛选实验。</p>
+
+<table>
+  <tr><th>输出/数据</th><th>主要输入</th><th>实验条件</th><th>用途</th></tr>
+  <tr><td>1784029182nav.txt</td><td>L3高精度/zh_origin+GNSS</td><td>同时间段高精度重跑</td><td>相对参考</td></tr>
+  <tr><td>1784099587nav.txt</td><td>L3 MEMS+GNSS</td><td>range关闭，初始Yaw=-135.4°</td><td>有效主实验</td></tr>
+  <tr><td>1784103279nav.txt</td><td>L3 MEMS</td><td>GNSS/range关闭，保留初始ZUPT</td><td>纯惯性对照</td></tr>
+  <tr><td>1784104885nav.txt</td><td>L3高精度IMU</td><td>与MEMS纯惯性相同条件</td><td>纯惯性对照</td></tr>
+  <tr><td>1783955325nav.txt</td><td>156-3贴片IMU+GNSS</td><td>陀螺尺度修正、原速播放</td><td>低成本IMU对照</td></tr>
+  <tr><td>156-2/156-3 UWB报告</td><td>ID2至ID0/ID1/ID3</td><td>GNSS/RTK几何距离对比</td><td>测距精度</td></tr>
+  <tr><td>1784102203nav.txt</td><td>L3 MEMS+156-3 range</td><td>确认启用range更新</td><td>失败机理分析</td></tr>
+</table>
+
+<h1>2　数据来源与预处理</h1>
+<h2>2.1　惯性与GNSS数据</h2>
+<p>L3原始bag同时包含高精度惯性增量/zh_origin和MEMS速率数据/L3/imu_origin。高精度增量保持原值；MEMS角速度字段经实测确认单位为°/s，转换为rad/s后采用相邻样本梯形积分生成角增量和速度增量：</p>
+<p class="equation">Δθ<sub>k</sub> = ½(ω<sub>k-1</sub> + ω<sub>k</sub>)Δt，　Δv<sub>k</sub> = ½(f<sub>k-1</sub> + f<sub>k</sub>)Δt。　(1)</p>
+<p>输出采用固定200 Hz时间网格，源帧号由0～199循环转换为程序兼容的0～255连续帧号。L3 MEMS转换后共313133帧，检测到的输出丢帧数为0。</p>
+
+<h2>2.2　UWB与移动锚点数据</h2>
+<p>156节点为UWB ID2，分别与ID0、ID1两架参考飞机及ID3地面节点测距。ID0和ID1的位置由对应节点GNSS轨迹插值得到，ID3使用现场记录的固定坐标。156-3测距通过GNSS UTC映射到L3时间轴，合并包包含313133条IMU、15657条GNSS和7836条range消息。range到最近IMU样本的时间差中位数为1.258 ms，P95为2.389 ms，最大值为5.933 ms。</p>
+
+<h1>3　组合导航与测距更新模型</h1>
+<h2>3.1　惯性机械编排</h2>
+<p>在忽略高阶圆锥、划船和地球自转补偿项的简化表达下，姿态、速度和位置递推为：</p>
+<p class="equation">C<sup>n</sup><sub>b,k+1</sub> = C<sup>n</sup><sub>b,k</sub> exp([Δθ<sub>k</sub> − b<sub>g</sub>Δt]<sub>×</sub>)。　(2)</p>
+<p class="equation">v<sup>n</sup><sub>k+1</sub> = v<sup>n</sup><sub>k</sub> + [C<sup>n</sup><sub>b,k</sub>(f<sup>b</sup><sub>k</sub> − b<sub>a</sub>) + g<sup>n</sup>]Δt。　(3)</p>
+<p class="equation">p<sup>n</sup><sub>k+1</sub> = p<sup>n</sup><sub>k</sub> + v<sup>n</sup><sub>k</sub>Δt + ½a<sup>n</sup><sub>k</sub>Δt²。　(4)</p>
+
+<h2>3.2　15状态误差状态EKF</h2>
+<p>滤波器采用位置、速度、姿态误差及惯性器件零偏构成的15维误差状态：</p>
+<p class="equation">δx = [δp<sup>T</sup>　δv<sup>T</sup>　δφ<sup>T</sup>　δb<sub>g</sub><sup>T</sup>　δb<sub>a</sub><sup>T</sup>]<sup>T</sup>。　(5)</p>
+<p class="equation">δx<sub>k+1</sub> = Φ<sub>k</sub>δx<sub>k</sub> + G<sub>k</sub>w<sub>k</sub>。　(6)</p>
+<p class="equation">P<sup>−</sup><sub>k+1</sub> = Φ<sub>k</sub>P<sup>+</sup><sub>k</sub>Φ<sub>k</sub><sup>T</sup> + Q<sub>k</sub>。　(7)</p>
+<p>对任一观测，残差、新息协方差和卡尔曼增益为：</p>
+<p class="equation">r<sub>k</sub> = z<sub>k</sub> − h(x̂<sup>−</sup><sub>k</sub>)。　(8)</p>
+<p class="equation">S<sub>k</sub> = H<sub>k</sub>P<sup>−</sup><sub>k</sub>H<sub>k</sub><sup>T</sup> + R<sub>k</sub>。　(9)</p>
+<p class="equation">K<sub>k</sub> = P<sup>−</sup><sub>k</sub>H<sub>k</sub><sup>T</sup>S<sub>k</sub><sup>−1</sup>，　δx̂<sub>k</sub> = K<sub>k</sub>r<sub>k</sub>。　(10)</p>
+
+<h2>3.3　GNSS位置观测</h2>
+<p>本批次GNSS不包含可靠速度信息，因此只使用位置观测：</p>
+<p class="equation">z<sub>GNSS</sub> = p + v<sub>p</sub>，　r<sub>GNSS</sub> = z<sub>GNSS</sub> − p̂<sup>−</sup>。　(11)</p>
+<p>缺少速度观测会降低加速度计零偏和部分姿态误差的可观性。静止阶段加速度计主要约束Roll和Pitch，Yaw通常需要磁力计、地球自转、运动激励或外部航向信息辅助。</p>
+
+<h2>3.4　UWB测距观测</h2>
+<p>第i个锚点位置为p<sub>i</sub>，UWB测距模型为：</p>
+<p class="equation">z<sub>i</sub> = ρ<sub>i</sub> + b<sub>r,i</sub> + v<sub>i</sub>，　ρ<sub>i</sub> = ‖p − p<sub>i</sub>‖。　(12)</p>
+<p>其中b<sub>r,i</sub>表示节点相关的等效测距偏置。现有程序未显式估计该偏置，单测距更新使用的残差符号为：</p>
+<p class="equation">Z<sub>i</sub> = ρ̂<sub>i</sub> − z<sub>i</sub>。　(13)</p>
+<p>在局部导航坐标近似下，测距观测矩阵的位置部分为：</p>
+<p class="equation">H<sub>i</sub><sup>p</sup> = [ (φ−φ<sub>i</sub>)(R<sub>M</sub>+h)²/ρ̂<sub>i</sub>， (λ−λ<sub>i</sub>)((R<sub>N</sub>+h)cosφ)²/ρ̂<sub>i</sub>， (h−h<sub>i</sub>)/ρ̂<sub>i</sub> ]。　(14)</p>
+<p>现有代码在式(14)分母位置使用实测距离z<sub>i</sub>，而不是预测距离ρ̂<sub>i</sub>。测量正常时两者接近；出现粗差时，雅可比会按ρ̂<sub>i</sub>/z<sub>i</sub>错误缩放，使观测模型与协方差更新不一致。</p>
+
+<h1>4　评价指标与对齐方法</h1>
+<p>姿态误差采用高精度结果插值至待测输出时刻后作差，Yaw误差归一化至[-180°,180°)。第j个样本误差为e<sub>j</sub>，则：</p>
+<p class="equation">RMS(e) = √[(1/N)Σe<sub>j</sub>²]，　MAE(e) = (1/N)Σ|e<sub>j</sub>|。　(15)</p>
+<p>经纬高位置差转换为局部北、东、天误差e<sub>N</sub>、e<sub>E</sub>、e<sub>U</sub>，水平误差定义为：</p>
+<p class="equation">e<sub>H</sub> = √(e<sub>N</sub>² + e<sub>E</sub>²)。　(16)</p>
+<p>UWB统计采用测距值减GNSS/RTK几何距离，并报告平均误差、MAE、RMSE、P95绝对误差、最大绝对误差及超过10 m的样本数。P95用于描述主体误差，最大值用于识别重尾粗差，二者不可相互替代。</p>
+
+<h1>5　实验结果与分析</h1>
+<h2>5.1　L3 MEMS与高精度参考的GNSS组合导航对比</h2>
+<p>1784099587nav.txt与1784029182nav.txt公共区间为1004.535 s。公共区间开始前10 s，MEMS减高精度结果的姿态误差中位数为−0.021°、−0.395°和−0.595°，说明固定初始Yaw后两者初始航向已基本一致。</p>
+<table>
+  <tr><th>指标</th><th>Roll</th><th>Pitch</th><th>Yaw</th><th>水平位置</th></tr>
+  <tr><td>RMS</td><td>0.175°</td><td>0.443°</td><td>0.545°</td><td>0.129 m</td></tr>
+  <tr><td>P95绝对误差</td><td>0.255°</td><td>0.547°</td><td>0.890°</td><td>0.231 m</td></tr>
+  <tr><td>最大绝对误差</td><td>1.234°</td><td>0.935°</td><td>1.446°</td><td>0.568 m</td></tr>
+</table>
+<p>飞行段高程误差RMS为0.185 m。该结果说明在共用GNSS位置更新时，L3 MEMS解算与高精度IMU解算具有较高相对一致性，但不能直接解释为相对于独立真值的绝对精度。</p>
+<figure><img src="figures/mems_gnss_attitude_errors.png"><figcaption class="caption">图1　L3 MEMS+GNSS相对高精度参考的姿态误差</figcaption></figure>
+<figure><img src="figures/mems_gnss_trajectory.png"><figcaption class="caption">图2　L3 MEMS与高精度参考的组合导航轨迹</figcaption></figure>
+
+<h2>5.2　纯惯性推算对照</h2>
+<p>为隔离IMU质量影响，1784103279nav.txt和1784104885nav.txt分别使用L3 MEMS和L3高精度IMU，关闭GNSS与range，并采用相同初始Yaw和初始ZUPT条件。</p>
+<table>
+  <tr><th>IMU</th><th>60 s</th><th>120 s</th><th>300 s</th><th>600 s</th><th>900 s</th><th>末端</th></tr>
+  <tr><td>L3 MEMS</td><td>12.8 m</td><td>50.3 m</td><td>244.7 m</td><td>841.3 m</td><td>2152.7 m</td><td>2590.4 m</td></tr>
+  <tr><td>L3高精度</td><td>3.4 m</td><td>19.6 m</td><td>122.8 m</td><td>488.8 m</td><td>1178.2 m</td><td>1352.9 m</td></tr>
+</table>
+<p>高精度IMU纯惯性飞行段姿态误差RMS为0.065°/0.052°/0.397°，MEMS为0.107°/0.464°/1.152°。高精度IMU将末端水平误差降低约47.8%，但不能消除长期无外援漂移。</p>
+<figure><img src="figures/mems_pure_ins_position_errors.png"><figcaption class="caption">图3　L3 MEMS纯惯性推算位置误差</figcaption></figure>
+<figure><img src="figures/high_pure_ins_position_errors.png"><figcaption class="caption">图4　L3高精度IMU纯惯性推算位置误差</figcaption></figure>
+
+<h2>5.3　贴片IMU对照</h2>
+<p>156-3贴片IMU原始陀螺输出相对L3惯性数据表现出约2倍尺度差。将陀螺增量统一乘0.5并进行零偏参数试验后，代表性结果1783955325nav.txt相对新高精度参考的飞行段Roll、Pitch、Yaw误差RMS分别为1.190°、1.937°和32.810°，水平位置差RMS为3.560 m，高程差RMS为7.774 m。</p>
+<figure><img src="figures/sticker_attitude_errors.png"><figcaption class="caption">图5　L3 MEMS与156-3贴片IMU相对高精度参考的姿态误差</figcaption></figure>
+
+<h2>5.4　156-2与156-3 UWB测距精度</h2>
+<table>
+  <tr><th>批次</th><th>链路</th><th>样本数</th><th>平均误差/m</th><th>MAE/m</th><th>RMSE/m</th><th>P95|e|/m</th><th>最大|e|/m</th><th>|e|&gt;10 m</th></tr>
+  <tr><td>156-2</td><td>ID2→ID0</td><td>6342</td><td>1.764</td><td>1.832</td><td>2.246</td><td>3.153</td><td>51.716</td><td>3</td></tr>
+  <tr><td>156-2</td><td>ID2→ID1</td><td>6976</td><td>2.751</td><td>2.781</td><td>3.636</td><td>4.140</td><td>44.553</td><td>23</td></tr>
+  <tr><td>156-2</td><td>ID2→ID3</td><td>8144</td><td>0.458</td><td>0.897</td><td>2.510</td><td>1.728</td><td>80.944</td><td>24</td></tr>
+  <tr><td>156-3</td><td>ID2→ID0</td><td>6602</td><td>1.933</td><td>2.159</td><td>2.412</td><td>4.117</td><td>44.770</td><td>1</td></tr>
+  <tr><td>156-3</td><td>ID2→ID1</td><td>5028</td><td>1.700</td><td>1.715</td><td>2.888</td><td>2.546</td><td>42.685</td><td>17</td></tr>
+  <tr><td>156-3</td><td>ID2→ID3</td><td>1174</td><td>1.476</td><td>3.518</td><td>10.659</td><td>3.223</td><td>140.453</td><td>18</td></tr>
+</table>
+<p>主体分布的P95绝对误差均小于4.2 m，但最大值远大于P95，证明测距误差具有明显重尾特征。156-3中一条ID3原始测距为20.753 m，按高精度轨迹与假定的ID3固定坐标计算的几何距离约为167.615 m，相应几何残差约为146.862 m。20.753 m在原始/uwb消息中已经存在，转换脚本只映射时间、节点ID并补充锚点坐标。</p>
+<figure class="wide-figure"><img src="figures/uwb_156_2_overview.png"><figcaption class="caption">图6　156-2三条UWB链路与GNSS/RTK几何距离对比</figcaption></figure>
+<figure class="wide-figure"><img src="figures/uwb_156_3_overview.png"><figcaption class="caption">图7　156-3三条UWB链路与GNSS/RTK几何距离对比</figcaption></figure>
+
+<h2>5.5　range更新发散案例</h2>
+<p>用户确认1784102203nav.txt启用了range更新。其初始姿态与有效MEMS+GNSS实验接近，但后续位置逐渐失控：飞行段水平误差中位数为793.3 m，RMS约为28.8 km，最大值约为85.5 km；末端水平速度约为357 m/s，高度约为−2780.7 m。该结果不能作为定位精度结果，只能作为失败案例。</p>
+<figure><img src="figures/range_failure_position_errors.png"><figcaption class="caption">图8　启用range更新后的发散位置误差</figcaption></figure>
+<p>当前单测距更新使用固定门限：</p>
+<p class="equation">|ρ̂<sub>i</sub> − z<sub>i</sub>| &gt; T<sub>r</sub>　⇒　拒绝该观测。　(17)</p>
+<p>若T<sub>r</sub>=10 m，在状态估计尚准确时可以过滤大粗差。但固定门限不能消除1～5 m的节点偏置；惯性位置漂移超过门限后，正确UWB也可能被永久拒绝。现有主流程还按锚点顺序执行单测距更新，未输出逐节点接受率和归一化新息。</p>
+
+<h1>6　讨论</h1>
+<h2>6.1　初始航向与运动可观性</h2>
+<p>静止时比力主要提供重力方向，能够约束Roll和Pitch，但不能直接提供航向。若陀螺精度不足以可靠感知地球自转，Yaw只能依赖磁力计、人工赋值或后续运动激励。早期MEMS实验中，初始Yaw相对高精度结果曾相差约23°，起飞后约8.74 s才持续进入1°以内，说明GNSS位置观测通过速度和位置残差间接增强了Yaw可观性。</p>
+
+<h2>6.2　共用GNSS条件下的相对精度限制</h2>
+<p>MEMS与高精度组合导航共同使用L3 GNSS，因此0.129 m水平RMS主要反映两套惯性解算在相同外援条件下的相对一致性。共同GNSS偏差、杆臂误差和时间延迟可能同时存在于两组结果中而被相消。要获得毕业论文中的绝对定位精度，应引入独立RTK、全站仪或激光轨迹真值，并明确坐标框架、杆臂和时间基准。</p>
+
+<h2>6.3　测距误差的偏置与重尾特征</h2>
+<p>UWB各链路平均误差并不相同，统一零均值高斯噪声模型过于理想。更合理的模型应包含节点相关偏置：</p>
+<p class="equation">z<sub>i</sub> = ρ<sub>i</sub> + b<sub>r,i</sub> + v<sub>i</sub>，　b<sub>r,i,k+1</sub> = b<sub>r,i,k</sub> + w<sub>b,i,k</sub>。　(18)</p>
+<p>对于重尾观测，可计算归一化新息平方：</p>
+<p class="equation">NIS<sub>i</sub> = r<sub>i</sub><sup>T</sup>S<sub>i</sub><sup>−1</sup>r<sub>i</sub>。　(19)</p>
+<p>再按卡方门限拒绝或使用Huber权重降低粗差影响。相较固定米制阈值，NIS同时考虑预测协方差、测距噪声和状态不确定度，更适合GNSS中断后的动态场景。</p>
+
+<h1>7　结论与后续工作</h1>
+<h2>7.1　主要结论</h2>
+<ol>
+  <li>在共用GNSS位置观测条件下，L3 MEMS与高精度IMU解算具有较高相对一致性，飞行段姿态RMS为0.175°/0.443°/0.545°，水平位置差RMS为0.129 m。</li>
+  <li>纯惯性对照中，高精度IMU末端水平误差为1352.9 m，约为MEMS的52.2%，但两者均随时间显著发散。</li>
+  <li>156-3贴片IMU经过陀螺尺度修正后仍存在明显航向误差，尺度修正不能替代可靠初始航向、零偏建模和统一受控配置。</li>
+  <li>156-2和156-3的UWB主体误差通常在5 m以内，但存在40～140 m粗差。只看P95会低估极端值对EKF的影响。</li>
+  <li>当前range更新失败不能归因于单一粗差。固定门限可以减弱大误差影响，但不能处理系统偏置、状态漂移后的观测锁死、锚点位置误差和观测矩阵不一致问题。</li>
+</ol>
+
+<h2>7.2　建议的下一轮受控实验</h2>
+<ol>
+  <li>每次运行自动保存输入bag哈希、播放命令、配置文件、Git提交号和range逐节点统计。</li>
+  <li>以有效MEMS+GNSS结果为基线，依次运行GNSS+range、短时GNSS后range、纯range三组单变量实验。</li>
+  <li>range初步使用10～15 m硬门限作数据诊断，同时记录预测距离、实测距离、残差、NIS、是否接受及节点ID。</li>
+  <li>核验ID3物理节点映射和155基站坐标，检查重复测距是否为旧值重复发布。</li>
+  <li>将观测矩阵分母改为预测距离，按同一时刻构造批量测距更新，并对不同节点设置独立噪声与偏置状态。</li>
+  <li>使用独立RTK真值、统一杆臂和严格UTC同步完成最终绝对精度实验。</li>
+</ol>
+
+<h1>附录　核心文件索引与适用边界</h1>
+<table>
+  <tr><th>类别</th><th>文件</th></tr>
+  <tr><td>高精度参考</td><td class="source">nav_outputs/1784029182nav.txt</td></tr>
+  <tr><td>MEMS+GNSS有效结果</td><td class="source">nav_outputs/1784099587nav.txt</td></tr>
+  <tr><td>MEMS纯惯性</td><td class="source">nav_outputs/1784103279nav.txt</td></tr>
+  <tr><td>高精度纯惯性</td><td class="source">nav_outputs/1784104885nav.txt</td></tr>
+  <tr><td>贴片IMU对照</td><td class="source">nav_outputs/1783955325nav.txt</td></tr>
+  <tr><td>range失败案例</td><td class="source">nav_outputs/1784102203nav.txt</td></tr>
+  <tr><td>运行记录</td><td class="source">NAV_EXPERIMENT_RECORD.md</td></tr>
+</table>
+<p>本文为基于当前可见文件形成的阶段实验报告。凡历史配置未单独归档的运行，均未用于严格单变量结论。高精度IMU结果用于同程序、同时间段的相对参考；UWB参考距离依赖GNSS/RTK轨迹和固定锚点坐标。后续毕业论文定稿时，应使用新一轮可复现受控实验替换仍带有共同误差源的相对结果。</p>
+
+<h2>参考文献</h2>
+<ol>
+  <li>P. D. Groves. <i>Principles of GNSS, Inertial, and Multisensor Integrated Navigation Systems</i>. Artech House, 2013.</li>
+  <li>D. Titterton and J. Weston. <i>Strapdown Inertial Navigation Technology</i>. IET, 2004.</li>
+  <li>Y. Bar-Shalom, X. R. Li, and T. Kirubarajan. <i>Estimation with Applications to Tracking and Navigation</i>. Wiley, 2001.</li>
+</ol>
+
+</body>
+</html>

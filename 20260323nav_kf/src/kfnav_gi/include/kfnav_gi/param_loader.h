@@ -52,6 +52,8 @@ public:
     bool is_baro_using_kf;
     bool is_range_using;
     bool is_mag_yaw_using;
+    bool is_initial_yaw_override;
+    double initial_yaw_deg;
 };
 
 extern std::shared_ptr<ParamLoader> pload;
